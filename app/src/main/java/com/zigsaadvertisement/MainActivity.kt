@@ -68,11 +68,13 @@ class MainActivity : AppCompatActivity() {
                             fakeData.content
                         }
 
-                        checkDownloadedFiles()
-
                         type = data.map { dataType ->
                             dataType.type
                         }
+
+                        val imagePagerAdapter = ImagePagerAdapter(applicationContext, newImageUrls, viewPager, type)
+                        viewPager.adapter = imagePagerAdapter
+                        imagePagerAdapter.updateData(newImageUrls)
 
                         checkDownloadedFiles()
                     } else {
