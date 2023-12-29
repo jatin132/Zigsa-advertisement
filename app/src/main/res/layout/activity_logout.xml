@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@drawable/default_background"
+    android:layout_height="match_parent"
+    tools:context=".Logout">
+
+    <Button
+        android:id="@+id/logoutAccount"
+        android:layout_width="290dp"
+        android:layout_height="112dp"
+        android:backgroundTint="@color/danger"
+        android:text="Logout "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="261dp"
+        android:layout_height="78dp"
+        android:gravity="center"
+        android:text="Settings"
+        android:textColor="@color/black_overlay"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/logoutAccount"
+        app:layout_constraintEnd_toEndOf="@+id/logoutAccount"
+        app:layout_constraintStart_toStartOf="@+id/logoutAccount"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/build_number"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Build Number: "
+        android:textColor="@color/black_overlay"
+        android:textSize="15sp"
+        app:layout_constraintBottom_toTopOf="@+id/build_code"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/logoutAccount"
+        app:layout_constraintVertical_bias="0.87" />
+
+    <TextView
+        android:id="@+id/build_code"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Build Code: "
+        android:textColor="@color/black_overlay"
+        android:textSize="15sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/logoutAccount"
+        app:layout_constraintVertical_bias="0.5" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
