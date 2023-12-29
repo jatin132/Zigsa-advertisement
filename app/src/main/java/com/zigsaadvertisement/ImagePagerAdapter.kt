@@ -3,6 +3,7 @@ package com.zigsaadvertisement
 import android.content.Context
 import android.net.Uri
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +14,7 @@ import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "UNREACHABLE_CODE")
 class ImagePagerAdapter(
     private val context: Context,
     private var imageUrls: List<String>,
@@ -27,35 +28,41 @@ class ImagePagerAdapter(
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val inflater = LayoutInflater.from(context)
-        val view = inflater.inflate(R.layout.data_view, container, false)
+        val mediaUrl = imageUrls[position]
+
+        // Check if the media file ends with ".mp4"
+        val isVideo = mediaUrl.endsWith(".mp4")
+
+        val layoutId = R.layout.data_view
+        val view = inflater.inflate(layoutId, container, false)
+
         val imageView: ImageView = view.findViewById(R.id.image)
         val videoView: VideoView = view.findViewById(R.id.video)
-        val mediaUrl = imageUrls[position]
-        val type = type[position]
 
-        if (type.contains("video")){
-            Log.i("Exception", "type is if ${type[position]}")
-            videoView.visibility = View.VISIBLE
-            imageView.visibility = View.GONE
+        if (isVideo) {
             val videoUri = Uri.parse(mediaUrl)
             videoView.setVideoPath(videoUri.toString())
             videoView.start()
 
-            videoView.setOnCompletionListener {
-                switchToNextItem()
+            val duration = videoView.duration
+
+            return if (duration > 0) {
+                startImageChangeTimer(duration.toLong().toInt())
+                duration.toLong()
+            } else {
+                startImageChangeTimer(DEFAULT_VIDEO_DURATION.toInt())
+                DEFAULT_VIDEO_DURATION
             }
         } else {
-            Log.i("Exception", "type is else ${type[position]}")
-            videoView.visibility = View.GONE
-            imageView.visibility = View.VISIBLE
             Glide.with(context).load(mediaUrl).into(imageView)
 
-            startImageChangeTimer()
+            startImageChangeTimer(4000)
         }
 
         container.addView(view)
         return view
     }
+
 
     override fun getCount(): Int {
         return imageUrls.size
@@ -66,7 +73,10 @@ class ImagePagerAdapter(
     }
 
     override fun destroyItem(container: ViewGroup, position: Int, obj: Any) {
-        container.removeView(obj as View)
+        if (obj is View) {
+            container.removeView(obj)
+        }
+        // Handle other types if needed
     }
 
     fun updateData(newImageUrls: List<String>) {
@@ -79,14 +89,9 @@ class ImagePagerAdapter(
         viewPager.currentItem = currentItem
     }
 
-    private fun startImageChangeTimer() {
+    private fun startImageChangeTimer(duration: Int) {
         handler.postDelayed({
             switchToNextItem()
-        }, 4000)
-    }
-
-    private fun getVideoDuration(videoView: VideoView): Long {
-        val duration = videoView.duration
-        return if (duration > 0) duration.toLong() else DEFAULT_VIDEO_DURATION
+        }, duration.toLong())
     }
 }
