@@ -1,10 +1,9 @@
 package com.zigsaadvertisement
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
+import android.media.MediaPlayer
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.util.Log
 import androidx.viewpager.widget.ViewPager
 import retrofit2.Call
@@ -17,17 +16,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewPager: ViewPager
     private var type: List<String> = emptyList()
     private var controller: Controller = Controller()
-    private var newImageUrls = emptyList<String>()
+//    private var newImageUrls = emptyList<String>()
     private lateinit var webViewUrl: String
     private lateinit var token: String
-//    private val imageUrls = listOf(
-//        "https://image.aitech.work/test_video.mp4",
-//        "https://cdn.pixabay.com/photo/2020/06/29/20/12/man-in-red-dress-5354230_1280.png",
-//        "https://image.aitech.work/test_video.mp4",
-//        "https://cdn.pixabay.com/photo/2020/11/10/15/51/bear-5730216_1280.png",
-//        "https://image.aitech.work/test_video.mp4",
-//        "https://cdn.pixabay.com/photo/2020/02/25/16/40/mascot-4879416_1280.png"
-//    )
+    private var newImageUrls = listOf(
+        "https://cdn.pixabay.com/photo/2020/06/29/20/12/man-in-red-dress-5354230_1280.png",
+        "https://image.aitech.work/test_video.mp4",
+        "https://image.aitech.work/test_video.mp4",
+        "https://cdn.pixabay.com/photo/2020/11/10/15/51/bear-5730216_1280.png",
+        "https://image.aitech.work/test_video.mp4",
+        "https://cdn.pixabay.com/photo/2020/02/25/16/40/mascot-4879416_1280.png"
+    )
+    private var duration: Int = 0
+    private lateinit var handler: Handler
+    private lateinit var logRunnable: Runnable
+    private var currentIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,22 +38,58 @@ class MainActivity : AppCompatActivity() {
 
         viewPager = findViewById(R.id.viewPager)
 
-        val sharedPreferences: SharedPreferences = getSharedPreferences("zigsa_advertisement", MODE_PRIVATE)
-        token = sharedPreferences.getString("token", "").toString()
-        webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
+        handler = Handler()
 
-        getData()
+        logRunnable = object : Runnable {
+            override fun run() {
+                if (currentIndex < newImageUrls.size) {
+                    val videoUrl = newImageUrls[currentIndex]
 
-        // Start a timer to change images every 4 seconds
-//        Timer().scheduleAtFixedRate(timerTask {
-//            runOnUiThread {
-//                if (viewPager.currentItem == imageUrls.size - 1) {
-//                    viewPager.currentItem = 0
-//                } else {
-//                    viewPager.currentItem = viewPager.currentItem + 1
-//                }
-//            }
-//        }, 2000, 2000)
+                    if (videoUrl.endsWith(".mp4")) {
+                        retrieveVideoDuration(videoUrl)
+                    } else {
+                        Log.i("Exception", "URL does not end with .mp4: $videoUrl, Duration: 4 seconds")
+                        handler.postDelayed(this, 4000)
+                    }
+
+                    currentIndex++
+                }
+            }
+        }
+
+        handler.post(logRunnable)
+
+//        val sharedPreferences: SharedPreferences = getSharedPreferences("zigsa_advertisement", MODE_PRIVATE)
+//        token = sharedPreferences.getString("token", "").toString()
+//        webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
+
+        val imagePagerAdapter = ImagePagerAdapter(applicationContext, newImageUrls, viewPager,
+            listOf("")
+        )
+        viewPager.adapter = imagePagerAdapter
+        imagePagerAdapter.updateData(newImageUrls)
+//        getData()
+    }
+
+    private fun retrieveVideoDuration(videoUrl: String) {
+        try {
+            val mediaPlayer = MediaPlayer()
+            mediaPlayer.setDataSource(videoUrl)
+            mediaPlayer.setOnPreparedListener { player ->
+                duration = player.duration
+                Log.i("Exception", "Video URL: $videoUrl, Duration: $duration milliseconds")
+
+                player.release()
+
+                handler.postDelayed(logRunnable, duration.toLong())
+            }
+            mediaPlayer.prepareAsync()
+        } catch (e: Exception) {
+            Log.e("Exception", "Error retrieving video duration for $videoUrl: ${e.message}")
+
+            Log.i("Exception", "URL: $videoUrl, Default Duration: 4 seconds")
+            handler.postDelayed(logRunnable, 4000)
+        }
     }
 
     private fun getData() {
