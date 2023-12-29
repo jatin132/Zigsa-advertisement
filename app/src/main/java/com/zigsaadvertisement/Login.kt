@@ -38,6 +38,8 @@ class Login : AppCompatActivity() {
     private var isAccessWriteExternalStoragePermissionGranted = false
     private lateinit var token: String
     private lateinit var webViewUrl: String
+    private var orientation: String = "landscape"
+    private var viewType: String= ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,12 +106,11 @@ class Login : AppCompatActivity() {
     @SuppressLint("HardwareIds")
     @Suppress("DEPRECATION")
     private fun setupPusher() {
-        val sessionManager = SessionManager(this)
         val deviceId = Settings.Secure.getString(
             applicationContext.contentResolver,
             Settings.Secure.ANDROID_ID
         )
-        val channelName = "tv." + deviceId
+        val channelName = "tv.$deviceId"
 
         val options = PusherOptions().setEncrypted(true)
         options.setCluster(Constants.PUSHER_CLUSTER)
@@ -129,23 +130,39 @@ class Login : AppCompatActivity() {
         channel.bind("connect-tv") {
             Log.i("Exception", "pusher event" + it.channelName + it.eventName + it.data.toString())
             val jsonObject = JSONObject(it.data)
-            token = jsonObject.getString("token")
-            webViewUrl = jsonObject.getString("webview_uuid")
 
-            // Store token and webViewUrl in SharedPreferences
-            saveDataToSharedPreferences(token, webViewUrl)
+            // Check if "view_type" is present
+            if (jsonObject.has("view_type") && jsonObject.has("orientation")) {
+                viewType = jsonObject.getString("view_type")
+            } else {
+                val intent = Intent(applicationContext, EmptyView::class.java)
+                startActivity(intent)
+            }
+
+            if (jsonObject.has("token") && jsonObject.has("webview_uuid")) {
+                token = jsonObject.getString("token")
+                webViewUrl = jsonObject.getString("webview_uuid")
+
+                saveDataToSharedPreferences()
+            } else {
+                Log.i("Exception", "token or webview_uuid is not present in the Pusher event data")
+                // Handle the absence of token or webViewUrl as needed
+            }
         }
     }
 
-    private fun saveDataToSharedPreferences(token: String, webViewUrl: String) {
+    private fun saveDataToSharedPreferences() {
         val sharedPreferences = getSharedPreferences("zigsa_advertisement", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putString("token", token)
         editor.putString("webViewUrl", webViewUrl)
+        editor.putString("orientation", orientation)
         editor.apply()
 
-        val intent = Intent(applicationContext, MainActivity::class.java)
-        startActivity(intent)
+        if (viewType == "adv"){
+            val intent = Intent(applicationContext, MainActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     @SuppressLint("SetTextI18n", "HardwareIds")
@@ -195,7 +212,6 @@ class Login : AppCompatActivity() {
                         }
                     }
                 })
-
         }
     }
 }
