@@ -1,6 +1,7 @@
 package com.zigsaadvertisement
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -34,7 +35,11 @@ class MainActivity : AppCompatActivity() {
 
         viewPager = findViewById(R.id.viewPager)
 
-        getDataFromSharedPreferences()
+        val sharedPreferences: SharedPreferences = getSharedPreferences("zigsa_advertisement", MODE_PRIVATE)
+        token = sharedPreferences.getString("token", "").toString()
+        webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
+
+        getData()
 
         // Start a timer to change images every 4 seconds
 //        Timer().scheduleAtFixedRate(timerTask {
@@ -84,31 +89,18 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun getDataFromSharedPreferences() {
-        val sharedPreferences = getSharedPreferences("zigsa_advertisement", Context.MODE_PRIVATE)
-        token = sharedPreferences.getString("token", null).toString()
-        webViewUrl = sharedPreferences.getString("webViewUrl", null).toString()
-
-        if(token.isEmpty()){
-            val intent1 = Intent(this@MainActivity, Login::class.java)
-            startActivity(intent1)
-            finish()
-            Log.i("Exception", "token is in if $token")
-        } else {
-            Log.i("Exception", "token is in else $token")
-            getData()
-        }
-    }
-
     private fun checkDownloadedFiles() {
         val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val files = downloadsDirectory.listFiles()
-        Log.i("Exception", "Found file in Downloads: $files")
 
-        for (file in files!!) {
+        for (file in files ?: emptyArray()) {
             val fileName = file.name
-            // Check if the file name contains the string present in the URL
-            if (newImageUrls.any { imageUrl -> fileName.contains(imageUrl) }) {
+            // Sanitize the file name and convert to lowercase for case-insensitive comparison
+            val sanitizedFileName = fileName.replace("[^a-zA-Z0-9.-]".toRegex(), "").toLowerCase(
+                Locale.ROOT)
+
+            // Check if the sanitized file name contains the string present in the URL
+            if (newImageUrls.any { imageUrl -> sanitizedFileName.contains(imageUrl) }) {
                 Log.i("Exception", "Found file in Downloads: $fileName")
             }
         }

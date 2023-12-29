@@ -42,9 +42,10 @@ class DownloadingAdvertisements : AppCompatActivity() {
             val intent = Intent(this, Login::class.java)
             startActivity(intent)
         } else {
-            val intent = Intent(this, Logout::class.java)
-            startActivity(intent)
+            getData()
         }
+
+        checkPermission()
     }
 
     private fun hasToken(): Boolean {
@@ -52,22 +53,6 @@ class DownloadingAdvertisements : AppCompatActivity() {
         token = sharedPreferences.getString("token", "").toString()
         webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
         return !Objects.equals(token, "")
-    }
-
-    private fun getDataFromSharedPreferences() {
-        val sharedPreferences = getSharedPreferences("zigsa_advertisement", Context.MODE_PRIVATE)
-        token = sharedPreferences.getString("token", null).toString()
-        webViewUrl = sharedPreferences.getString("webViewUrl", null).toString()
-
-        if(token.isEmpty()){
-            val intent1 = Intent(this@DownloadingAdvertisements, Login::class.java)
-            startActivity(intent1)
-            finish()
-            Log.i("Exception", "token is in if $token")
-        } else {
-            Log.i("Exception", "token is in else $token")
-            getData()
-        }
     }
 
     private fun getData() {
