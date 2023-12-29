@@ -144,7 +144,7 @@ class Login : AppCompatActivity() {
         editor.putString("webViewUrl", webViewUrl)
         editor.apply()
 
-        val intent = Intent(applicationContext, Logout::class.java)
+        val intent = Intent(applicationContext, MainActivity::class.java)
         startActivity(intent)
     }
 
