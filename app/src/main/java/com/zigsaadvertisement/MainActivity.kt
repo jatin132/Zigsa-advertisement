@@ -124,39 +124,38 @@ class MainActivity : AppCompatActivity() {
                         val duration = data.map { durationPeriod ->
                             durationPeriod.duration ?: 5000L
                         }
+                        logDownloadedFiles()
 
                         handler = Handler()
 
                         logRunnable = object : Runnable {
                             override fun run() {
-                                if (currentIndex < newImageUrls.size) {
-                                    val imageUrl = newImageUrls[currentIndex]
+                                if (currentIndex < downloadedFilesArray.size) {
+                                    val imageUrl = downloadedFilesArray[currentIndex]
                                     val fileName = getFileNameFromUrl(Uri.parse(imageUrl))
-
-                                    logDownloadedFiles()
 
                                     if (imageUrl.endsWith(".mp4")) {
                                         retrieveVideoDuration(imageUrl)
-                                        Log.i("Exception", "Video ends with .mp4: $imageUrl")
+//                                        Log.i("Exception", "Video ends with .mp4: $imageUrl")
                                     } else {
                                         if (isFilePresentInDownloads(fileName)) {
-                                            Log.i("Exception", "File $fileName found in Downloads directory")
+//                                            Log.i("Exception", "File $fileName found in Downloads directory")
                                         } else {
-                                            Log.i("Exception", "File $fileName not found in Downloads directory. Downloading...")
+//                                            Log.i("Exception", "File $fileName not found in Downloads directory. Downloading...")
                                             downloadFile(imageUrl, fileName)
                                         }
 
                                         val delayDuration = duration.getOrElse(currentIndex) { 5000L }
-                                        Log.i("Exception", "URL does not end with .mp4: $imageUrl, Duration: ${delayDuration} seconds")
-                                        durations.add(delayDuration.toInt())
-                                        handler.postDelayed(this, delayDuration.toLong())
+//                                        Log.i("Exception", "URL does not end with .mp4: $imageUrl, Duration: ${delayDuration} seconds")
+                                        durations.add(5000)
+                                        handler.postDelayed(this, 5000)
 
                                     }
 
                                     currentIndex++
 
                                     // Check if we reached the end of the list
-                                    if (currentIndex == newImageUrls.size) {
+                                    if (currentIndex == downloadedFilesArray.size) {
                                         // Reset currentIndex to 0 to start from the beginning
                                         currentIndex = 0
                                     }
@@ -169,6 +168,7 @@ class MainActivity : AppCompatActivity() {
 
                         // Start automatic slide with the first item
                         handler.post(logRunnable)
+
                     } else {
                         Log.i("Exception", "API response is empty or null")
                     }
@@ -194,10 +194,10 @@ class MainActivity : AppCompatActivity() {
 
         val downloadedFilePaths = mutableListOf<String>()
 
-        Log.i("Exception", "List of Files in Downloads Directory:")
+//        Log.i("Exception", "List of Files in Downloads Directory:")
         for (file in files ?: emptyArray()) {
             val fileName = file.name
-            Log.i("Exception", fileName)
+//            Log.i("Exception", fileName)
 
             // Add the file path to the list
             downloadedFilePaths.add(file.absolutePath)
@@ -207,8 +207,8 @@ class MainActivity : AppCompatActivity() {
         downloadedFilesArray = downloadedFilePaths.toList()
 
         // Log the array
-        Log.i("Exception", "Array of Downloaded Files:")
-        Log.i("Exception", downloadedFilesArray.toString())
+//        Log.i("Exception", "Array of Downloaded Files:")
+//        Log.i("Exception", downloadedFilesArray.toString())
     }
 
     private fun downloadFile(fileUrl: String, fileName: String) {
