@@ -1,9 +1,13 @@
 package com.zigsaadvertisement
 
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
+import android.graphics.BitmapFactory
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
@@ -13,11 +17,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.VideoView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
-import com.bumptech.glide.Glide
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var token: String
     private lateinit var webViewUrl: String
     private var isTv: String = ""
+    private var downloadedFilesArray: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +73,6 @@ class MainActivity : AppCompatActivity() {
         token = sharedPreferences.getString("token", "").toString()
         webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
         isTv = sharedPreferences.getString("orientation", "").toString()
-        Log.i("exception", "istv is $isTv")
         return !Objects.equals(token, "")
     }
 
@@ -119,20 +121,36 @@ class MainActivity : AppCompatActivity() {
                             dataType.type
                         }
 
+                        val duration = data.map { durationPeriod ->
+                            durationPeriod.duration ?: 5000L
+                        }
+
                         handler = Handler()
 
                         logRunnable = object : Runnable {
                             override fun run() {
                                 if (currentIndex < newImageUrls.size) {
-                                    val videoUrl = newImageUrls[currentIndex]
+                                    val imageUrl = newImageUrls[currentIndex]
+                                    val fileName = getFileNameFromUrl(Uri.parse(imageUrl))
 
-                                    if (videoUrl.endsWith(".mp4")) {
-                                        retrieveVideoDuration(videoUrl)
-                                        Log.i("Exception", "Video ends with .mp4: $videoUrl")
+                                    logDownloadedFiles()
+
+                                    if (imageUrl.endsWith(".mp4")) {
+                                        retrieveVideoDuration(imageUrl)
+                                        Log.i("Exception", "Video ends with .mp4: $imageUrl")
                                     } else {
-                                        Log.i("Exception", "URL does not end with .mp4: $videoUrl, Duration: 4 seconds")
-                                        durations.add(4000)
-                                        handler.postDelayed(this, 4000)
+                                        if (isFilePresentInDownloads(fileName)) {
+                                            Log.i("Exception", "File $fileName found in Downloads directory")
+                                        } else {
+                                            Log.i("Exception", "File $fileName not found in Downloads directory. Downloading...")
+                                            downloadFile(imageUrl, fileName)
+                                        }
+
+                                        val delayDuration = duration.getOrElse(currentIndex) { 5000L }
+                                        Log.i("Exception", "URL does not end with .mp4: $imageUrl, Duration: ${delayDuration} seconds")
+                                        durations.add(delayDuration.toInt())
+                                        handler.postDelayed(this, delayDuration.toLong())
+
                                     }
 
                                     currentIndex++
@@ -146,7 +164,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
-                        customPagerAdapter = CustomPagerAdapter(this@MainActivity, newImageUrls)
+                        customPagerAdapter = CustomPagerAdapter(this@MainActivity, downloadedFilesArray)
                         viewPager.adapter = customPagerAdapter
 
                         // Start automatic slide with the first item
@@ -165,21 +183,58 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun checkDownloadedFiles() {
+    private fun getFileNameFromUrl(uri: Uri): String {
+        val path = uri.path
+        return path?.substring(path.lastIndexOf('/') + 1) ?: "unknown_file"
+    }
+
+    private fun logDownloadedFiles() {
+        val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val files = downloadsDirectory.listFiles()
+
+        val downloadedFilePaths = mutableListOf<String>()
+
+        Log.i("Exception", "List of Files in Downloads Directory:")
+        for (file in files ?: emptyArray()) {
+            val fileName = file.name
+            Log.i("Exception", fileName)
+
+            // Add the file path to the list
+            downloadedFilePaths.add(file.absolutePath)
+        }
+
+        // Assign the list to the global variable
+        downloadedFilesArray = downloadedFilePaths.toList()
+
+        // Log the array
+        Log.i("Exception", "Array of Downloaded Files:")
+        Log.i("Exception", downloadedFilesArray.toString())
+    }
+
+    private fun downloadFile(fileUrl: String, fileName: String) {
+        val request = DownloadManager.Request(Uri.parse(fileUrl))
+        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+            .setAllowedOverRoaming(false)
+            .setTitle(fileName)
+            .setDescription("Downloading")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+
+        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.enqueue(request)
+    }
+
+    private fun isFilePresentInDownloads(fileName: String): Boolean {
         val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val files = downloadsDirectory.listFiles()
 
         for (file in files ?: emptyArray()) {
-            val fileName = file.name
-            // Sanitize the file name and convert to lowercase for case-insensitive comparison
-            val sanitizedFileName = fileName.replace("[^a-zA-Z0-9.-]".toRegex(), "").toLowerCase(
-                Locale.ROOT)
-
-            // Check if the sanitized file name contains the string present in the URL
-            if (newImageUrls.any { imageUrl -> sanitizedFileName.contains(imageUrl) }) {
-                Log.i("Exception", "Found file in Downloads: $fileName")
+            val currentFileName = file.name
+            if (currentFileName == fileName) {
+                return true
             }
         }
+        return false
     }
 
     @Deprecated("Deprecated in Java")
@@ -232,9 +287,11 @@ class CustomPagerAdapter(private val context: MainActivity, private val items: L
             videoView.visibility = View.GONE
 
             // Load image in ImageView
-            Glide.with(context)
-                .load(item)
-                .into(imageView)
+            val bitmap = BitmapFactory.decodeFile(item)
+            imageView.setImageBitmap(bitmap)
+//            Glide.with(context)
+//                .load(File(item))
+//                .into(imageView)
 
             // Move to the next item after a fixed duration for images (4 seconds)
             context.handler.postDelayed({
