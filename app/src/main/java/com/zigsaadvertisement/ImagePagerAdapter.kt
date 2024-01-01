@@ -1,6 +1,7 @@
 package com.zigsaadvertisement
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -22,9 +23,10 @@ class ImagePagerAdapter(
     private var type: List<String>
 ) : PagerAdapter() {
 
-    private val handler = Handler()
-    private var currentItem = 0
-    private val DEFAULT_VIDEO_DURATION = 4000L
+    private var duration: Int = 0
+    private lateinit var handler: Handler
+    private lateinit var logRunnable: Runnable
+    private var currentIndex = 0
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val inflater = LayoutInflater.from(context)
@@ -39,30 +41,66 @@ class ImagePagerAdapter(
         val imageView: ImageView = view.findViewById(R.id.image)
         val videoView: VideoView = view.findViewById(R.id.video)
 
-        if (isVideo) {
-            val videoUri = Uri.parse(mediaUrl)
-            videoView.setVideoPath(videoUri.toString())
-            videoView.start()
+        handler = Handler()
 
-            val duration = videoView.duration
+        logRunnable = object : Runnable {
+            override fun run() {
+                if (currentIndex < imageUrls.size) {
+                    val videoUrl = imageUrls[currentIndex]
 
-            return if (duration > 0) {
-                startImageChangeTimer(duration.toLong().toInt())
-                duration.toLong()
-            } else {
-                startImageChangeTimer(DEFAULT_VIDEO_DURATION.toInt())
-                DEFAULT_VIDEO_DURATION
+                    if (videoUrl.endsWith(".mp4")) {
+                        retrieveVideoDuration(videoUrl)
+
+                        val videoUri = Uri.parse(mediaUrl)
+                        videoView.setVideoPath(videoUri.toString())
+                        videoView.start()
+                    } else {
+                        Log.i("Exception", "URL does not end with .mp4: $videoUrl, Duration: 4 seconds")
+                        handler.postDelayed(this, 4000)
+                    }
+
+                    currentIndex++
+                }
             }
-        } else {
-            Glide.with(context).load(mediaUrl).into(imageView)
-
-            startImageChangeTimer(4000)
         }
+
+        handler.post(logRunnable)
+
+//        if (isVideo) {
+
+//
+//            val duration = videoView.duration
+//
+
+//        } else {
+//            Glide.with(context).load(mediaUrl).into(imageView)
+//
+//        }
 
         container.addView(view)
         return view
     }
 
+    private fun retrieveVideoDuration(videoUrl: String) {
+        try {
+            val mediaPlayer = MediaPlayer()
+            mediaPlayer.setDataSource(videoUrl)
+            mediaPlayer.setOnPreparedListener { player ->
+                duration = player.duration
+                Log.i("Exception", "Video URL: $videoUrl, Duration: $duration milliseconds")
+
+                player.release()
+
+                handler.postDelayed(logRunnable, duration.toLong())
+            }
+            mediaPlayer.prepareAsync()
+        } catch (e: Exception) {
+            Log.e("Exception", "Error retrieving video duration for $videoUrl: ${e.message}")
+
+            Log.i("Exception", "URL: $videoUrl, Default Duration: 4 seconds")
+            handler.postDelayed(logRunnable, 4000)
+        }
+    }
 
     override fun getCount(): Int {
         return imageUrls.size
@@ -82,16 +120,5 @@ class ImagePagerAdapter(
     fun updateData(newImageUrls: List<String>) {
         imageUrls = newImageUrls
         notifyDataSetChanged()
-    }
-
-    private fun switchToNextItem() {
-        currentItem = (currentItem + 1) % imageUrls.size
-        viewPager.currentItem = currentItem
-    }
-
-    private fun startImageChangeTimer(duration: Int) {
-        handler.postDelayed({
-            switchToNextItem()
-        }, duration.toLong())
     }
 }
