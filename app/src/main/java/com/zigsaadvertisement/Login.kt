@@ -133,7 +133,8 @@ class Login : AppCompatActivity() {
 
             // Check if "view_type" is present
             if (jsonObject.has("view_type") && jsonObject.has("orientation")) {
-                viewType = jsonObject.getString("view_type")
+                token = jsonObject.getString("token")
+                webViewUrl = jsonObject.getString("webview_uuid")
             } else {
                 val intent = Intent(applicationContext, EmptyView::class.java)
                 startActivity(intent)
@@ -164,7 +165,7 @@ class Login : AppCompatActivity() {
         editor.apply()
 
         if (viewType == "adv"){
-            val intent = Intent(applicationContext, MainActivity::class.java)
+            val intent = Intent(applicationContext, DownloadingAdvertisements::class.java)
             startActivity(intent)
         }
     }
