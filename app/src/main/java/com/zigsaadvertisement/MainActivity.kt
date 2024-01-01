@@ -44,16 +44,11 @@ class MainActivity : AppCompatActivity() {
     private var durations: MutableList<Int> = mutableListOf()
     private lateinit var token: String
     private lateinit var webViewUrl: String
-    private var isTv: String = "landscape"
+    private var isTv: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        requestedOrientation = if (isTv == "landscape") {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
 
         viewPager = findViewById(R.id.viewPager)
 
@@ -62,6 +57,11 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         } else {
             getData()
+            requestedOrientation = if (isTv == "landscape") {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
     }
 
@@ -69,7 +69,8 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences: SharedPreferences = getSharedPreferences("zigsa_advertisement", MODE_PRIVATE)
         token = sharedPreferences.getString("token", "").toString()
         webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
-        isTv = sharedPreferences.getString("orientation", "landscape").toString()
+        isTv = sharedPreferences.getString("orientation", "").toString()
+        Log.i("exception", "istv is $isTv")
         return !Objects.equals(token, "")
     }
 

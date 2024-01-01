@@ -142,6 +142,8 @@ class Login : AppCompatActivity() {
             if (jsonObject.has("token") && jsonObject.has("webview_uuid")) {
                 token = jsonObject.getString("token")
                 webViewUrl = jsonObject.getString("webview_uuid")
+                viewType = jsonObject.getString("view_type")
+                orientation = jsonObject.getString("orientation")
 
                 saveDataToSharedPreferences()
             } else {
@@ -149,6 +151,8 @@ class Login : AppCompatActivity() {
                 // Handle the absence of token or webViewUrl as needed
             }
         }
+
+        Log.i("Exception", "pusher event $orientation")
     }
 
     private fun saveDataToSharedPreferences() {
