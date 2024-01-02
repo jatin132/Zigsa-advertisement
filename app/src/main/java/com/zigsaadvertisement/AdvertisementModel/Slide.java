@@ -1,9 +1,9 @@
-package com.zigsaadvertisement;
+package com.zigsaadvertisement.AdvertisementModel;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class AdvertisementModel {
+public class Slide {
 
     @SerializedName("campaign_id")
     @Expose
