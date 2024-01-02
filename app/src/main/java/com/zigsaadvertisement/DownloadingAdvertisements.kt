@@ -14,15 +14,7 @@ import android.view.WindowManager
 import android.webkit.MimeTypeMap
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.pusher.client.Pusher
-import com.pusher.client.PusherOptions
-import com.pusher.client.channel.PrivateChannelEventListener
-import com.pusher.client.channel.PusherEvent
-import com.pusher.client.connection.ConnectionEventListener
-import com.pusher.client.connection.ConnectionState
-import com.pusher.client.connection.ConnectionStateChange
-import com.pusher.client.util.HttpAuthorizer
-import org.json.JSONObject
+import com.zigsaadvertisement.AdvertisementModel.AdvertisementModel
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -76,22 +68,22 @@ class DownloadingAdvertisements : AppCompatActivity() {
     }
 
     private fun getData() {
-        val call: Call<List<AdvertisementModel>> =
+        val call: Call<AdvertisementModel> =
             controller.controller().dataInterface().getData("Bearer $token", webViewUrl)
-        call.enqueue(object : Callback<List<AdvertisementModel>> {
+        call.enqueue(object : Callback<AdvertisementModel> {
             override fun onResponse(
-                call: Call<List<AdvertisementModel>>,
-                response: Response<List<AdvertisementModel>>
+                call: Call<AdvertisementModel>,
+                response: Response<AdvertisementModel>
             ) {
                 if (response.isSuccessful) {
                     val data = response.body()
-                    if (data != null && data.isNotEmpty()) {
-                        newImageUrls = data.map { fakeData ->
+                    if (data != null && data.slides.isNotEmpty()) {
+                        newImageUrls = data.slides.map { fakeData ->
                             fakeData.content
                         }
                         downloadContent()
 
-                        type = data.map { dataType ->
+                        type = data.slides.map { dataType ->
                             dataType.type
                         }
                     } else {
@@ -102,7 +94,7 @@ class DownloadingAdvertisements : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(call: Call<List<AdvertisementModel>>, t: Throwable) {
+            override fun onFailure(call: Call<AdvertisementModel>, t: Throwable) {
                 Log.i("Exception", "Failed to fetch data from API $t")
             }
         })
@@ -162,8 +154,8 @@ class DownloadingAdvertisements : AppCompatActivity() {
                 Log.i("Exception", "image url is $imageUrl")
                 downloadManager.enqueue(request)
             } else {
-                val newIntent = Intent(this, MainActivity::class.java)
-                startActivity(newIntent)
+//                val newIntent = Intent(this, MainActivity::class.java)
+//                startActivity(newIntent)
                 Log.i("Exception", "File already downloaded: $fileName")
             }
         }
@@ -189,10 +181,10 @@ class DownloadingAdvertisements : AppCompatActivity() {
             val action = intent?.action
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
                 Log.i("Exception", "Download Complete")
-                val newIntent = Intent(context, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context?.startActivity(newIntent)
+//                val newIntent = Intent(context, MainActivity::class.java).apply {
+//                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//                }
+//                context?.startActivity(newIntent)
             }
         }
     }

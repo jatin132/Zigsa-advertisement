@@ -1,5 +1,6 @@
 package com.zigsaadvertisement
 
+import com.zigsaadvertisement.AdvertisementModel.AdvertisementModel
 import com.zigsawaitlist.network.TVCodeRequest
 import com.zigsawaitlist.network.TVCodeResponse
 import retrofit2.Call
@@ -14,5 +15,5 @@ interface APIService {
     fun getTvCode(@Body request: TVCodeRequest): Call<TVCodeResponse>
 
     @GET("tv/slides-lists/{webview_uuid}")
-    fun getData(@Header("Authorization") token: String, @Path("webview_uuid") uuid: String): Call<List<AdvertisementModel>>
+    fun getData(@Header("Authorization") token: String, @Path("webview_uuid") uuid: String): Call<AdvertisementModel>
 }
