@@ -3,6 +3,7 @@ package com.zigsaadvertisement
 import android.Manifest
 import android.app.DownloadManager
 import android.content.*
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +14,15 @@ import android.view.WindowManager
 import android.webkit.MimeTypeMap
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.pusher.client.Pusher
+import com.pusher.client.PusherOptions
+import com.pusher.client.channel.PrivateChannelEventListener
+import com.pusher.client.channel.PusherEvent
+import com.pusher.client.connection.ConnectionEventListener
+import com.pusher.client.connection.ConnectionState
+import com.pusher.client.connection.ConnectionStateChange
+import com.pusher.client.util.HttpAuthorizer
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -21,12 +31,13 @@ import java.util.*
 @Suppress("DEPRECATION")
 class DownloadingAdvertisements : AppCompatActivity() {
 
-    private lateinit var imagePagerAdapter: ImagePagerAdapter
-    private var imageUrls: List<String> = emptyList()
     private var type: List<String> = emptyList()
     private var controller: Controller = Controller()
     private lateinit var webViewUrl: String
     private lateinit var token: String
+    private lateinit var orientation: String
+    private lateinit var viewType: String
+    private lateinit var locationUUID: String
     private var newImageUrls = emptyList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +63,15 @@ class DownloadingAdvertisements : AppCompatActivity() {
         val sharedPreferences: SharedPreferences = getSharedPreferences("zigsa_advertisement", MODE_PRIVATE)
         token = sharedPreferences.getString("token", "").toString()
         webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
+        orientation = sharedPreferences.getString("orientation", "").toString()
+        viewType = sharedPreferences.getString("view_type", "").toString()
+        locationUUID = sharedPreferences.getString("location", "").toString()
+
+        requestedOrientation = if (orientation == "landscape") {
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
         return !Objects.equals(token, "")
     }
 

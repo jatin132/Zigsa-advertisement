@@ -16,10 +16,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.pusher.client.Pusher
+import com.pusher.client.PusherOptions
+import com.pusher.client.channel.PrivateChannelEventListener
+import com.pusher.client.channel.PusherEvent
+import com.pusher.client.connection.ConnectionEventListener
+import com.pusher.client.connection.ConnectionState
+import com.pusher.client.connection.ConnectionStateChange
+import com.pusher.client.util.HttpAuthorizer
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -48,23 +58,34 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webViewUrl: String
     private var isTv: String = ""
     private var downloadedFilesArray: List<String> = emptyList()
+    private lateinit var orientation: String
+    private lateinit var viewType: String
+    private lateinit var locationUUID: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         viewPager = findViewById(R.id.viewPager)
-
+        val advertisement = findViewById<TextView>(R.id.advertisement)
+        advertisement.isSelected = true
         if (!hasToken()){
             val intent = Intent(this, Login::class.java)
             startActivity(intent)
         } else {
-            getData()
+            if (viewType == "adv"){
+                getData()
+            } else {
+                val intent = Intent(applicationContext, EmptyView::class.java)
+                startActivity(intent)
+            }
             requestedOrientation = if (isTv == "landscape") {
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             } else {
                 ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
+
+            setupPusher()
         }
     }
 
@@ -73,7 +94,60 @@ class MainActivity : AppCompatActivity() {
         token = sharedPreferences.getString("token", "").toString()
         webViewUrl = sharedPreferences.getString("webViewUrl", "").toString()
         isTv = sharedPreferences.getString("orientation", "").toString()
+        viewType = sharedPreferences.getString("view_type", "").toString()
+        locationUUID = sharedPreferences.getString("location", "").toString()
         return !Objects.equals(token, "")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun setupPusher() {
+        val channelName = "private-publicLocation.$locationUUID"
+
+        val authorizer = HttpAuthorizer(Constants.BASE_URL+ Constants.PUSHER_AUTH)
+
+        val options = PusherOptions().setEncrypted(true).setAuthorizer(authorizer)
+        options.setCluster(Constants.PUSHER_CLUSTER)
+
+        val pusher = Pusher(Constants.PUSHER_KEY, options)
+        pusher.connect(object : ConnectionEventListener {
+            override fun onConnectionStateChange(change: ConnectionStateChange) {
+                Log.i("Exception", " changed to " + change.currentState)
+            }
+
+            override fun onError(message: String, code: String?, e: Exception?) {
+                Log.i("Exception", " connecting! msg:$message")
+            }
+        }, ConnectionState.ALL)
+
+        val channel = pusher.subscribePrivate(channelName)
+
+        channel.bind("update_campaign_view", object : PrivateChannelEventListener {
+            override fun onAuthenticationFailure(string: String, ex: Exception) {
+                Log.i("Exception", "OnFailure")
+            }
+
+            override fun onEvent(event: PusherEvent?) {
+                val jsonObject = JSONObject(event!!.data)
+                val publicViewIds = jsonObject.optJSONArray("publicview_ids")
+
+                if (publicViewIds != null) {
+                    for (i in 0 until publicViewIds.length()) {
+                        val publicViewId = publicViewIds.getString(i)
+
+                        if (publicViewId == webViewUrl) {
+                            Log.i("Exception", "Public view id found: $publicViewId")
+                            getData()
+                            return
+                        }
+                    }
+                }
+                Log.i("Exception", "Public view id not found: $webViewUrl")
+            }
+
+            override fun onSubscriptionSucceeded(string: String) {
+                Log.i("Exception", string)
+            }
+        })
     }
 
     private fun retrieveVideoDuration(videoUrl: String) {

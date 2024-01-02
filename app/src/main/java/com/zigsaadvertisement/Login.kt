@@ -38,6 +38,7 @@ class Login : AppCompatActivity() {
     private var isAccessWriteExternalStoragePermissionGranted = false
     private lateinit var token: String
     private lateinit var webViewUrl: String
+    private lateinit var locationUUID: String
     private var orientation: String = "landscape"
     private var viewType: String= ""
 
@@ -135,6 +136,7 @@ class Login : AppCompatActivity() {
             if (jsonObject.has("view_type") && jsonObject.has("orientation")) {
                 token = jsonObject.getString("token")
                 webViewUrl = jsonObject.getString("webview_uuid")
+                locationUUID = jsonObject.getString("location_uuid")
             } else {
                 val intent = Intent(applicationContext, EmptyView::class.java)
                 startActivity(intent)
@@ -145,6 +147,7 @@ class Login : AppCompatActivity() {
                 webViewUrl = jsonObject.getString("webview_uuid")
                 viewType = jsonObject.getString("view_type")
                 orientation = jsonObject.getString("orientation")
+                locationUUID = jsonObject.getString("location_uuid")
 
                 saveDataToSharedPreferences()
             } else {
@@ -162,6 +165,8 @@ class Login : AppCompatActivity() {
         editor.putString("token", token)
         editor.putString("webViewUrl", webViewUrl)
         editor.putString("orientation", orientation)
+        editor.putString("view_type", viewType)
+        editor.putString("location", locationUUID)
         editor.apply()
 
         if (viewType == "adv"){
